@@ -2,7 +2,8 @@ import os
 import tempfile
 import base64
 from pdf2image import convert_from_path
-from mistralai import Mistral
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
 
 # Mistral API 엔드포인트
 MISTRAL_API_ENDPOINT = "https://api.mistral.ai/v1"
@@ -56,7 +57,7 @@ def process_pdf(pdf_path, mistral_api_key):
 
 def process_file_with_ocr(file_path, mime_type, mistral_api_key):
     """
-    파일을 Mistral OCR API를 사용하여 처리합니다.
+    파일을 Mistral API를 사용하여 처리합니다.
     
     Args:
         file_path (str): 파일 경로
@@ -74,85 +75,49 @@ def process_file_with_ocr(file_path, mime_type, mistral_api_key):
             file_data = file.read()
             file_base64 = base64.b64encode(file_data).decode('utf-8')
         
-        # 파일 유형에 따라 다른 처리
-        if mime_type == "application/pdf":
-            # PDF 파일
-            document_type = "document_url"
-            file_url = f"data:application/pdf;base64,{file_base64}"
-        elif mime_type.startswith("image/"):
-            # 이미지 파일
-            document_type = "image_url"
-            file_url = f"data:{mime_type};base64,{file_base64}"
-        else:
-            raise ValueError(f"지원하지 않는 MIME 타입입니다: {mime_type}")
+        # 이미지 URL 생성
+        file_url = f"data:{mime_type};base64,{file_base64}"
         
         # Mistral 클라이언트 초기화
-        client = Mistral(api_key=mistral_api_key)
+        client = MistralClient(api_key=mistral_api_key)
         
-        # OCR 처리 요청
-        print(f"OCR API 호출 중...")
+        # Vision API를 사용하여 OCR 처리
+        print(f"Vision API 호출 중...")
         
-        # 파일 유형에 따라 요청 구조 다르게 구성
-        if mime_type == "application/pdf":
-            # PDF 파일
-            ocr_response = client.ocr.process(
-                model="mistral-ocr-latest",
-                document={
-                    "type": "document_url",
-                    "document_url": file_url
-                }
+        # 프롬프트 생성
+        prompt = f"""이미지에 포함된 모든 텍스트를 추출해주세요. 
+        가능한 한 원본 형식(단락, 들여쓰기, 번호 매기기 등)을 유지하고, 
+        테이블 구조도 보존해주세요."""
+        
+        messages = [
+            ChatMessage(
+                role="user", 
+                content=[
+                    {
+                        "type": "text", 
+                        "text": prompt
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": file_url
+                        }
+                    }
+                ]
             )
-        else:
-            # 이미지 파일
-            ocr_response = client.ocr.process(
-                model="mistral-ocr-latest",
-                document={
-                    "type": "image_url",
-                    "image_url": file_url
-                }
-            )
+        ]
         
-        print("OCR 처리 완료")
-        print(f"OCR 응답 타입: {type(ocr_response)}")
-        print(f"OCR 응답 구조: {dir(ocr_response)}")
+        # API 호출
+        chat_response = client.chat(
+            model="mistral-large-latest",
+            messages=messages
+        )
         
-        try:
-            # JSON 형식으로 직접 덤프하여 구조 확인
-            print(f"OCR 응답 덤프: {ocr_response.model_dump()}")
-            
-            if hasattr(ocr_response, "text") and ocr_response.text:
-                print(f"텍스트 내용: {ocr_response.text[:100]}...")
-                return ocr_response.text
-            elif hasattr(ocr_response, "pages") and ocr_response.pages:
-                print(f"페이지 수: {len(ocr_response.pages)}")
-                pages_text = []
-                for i, page in enumerate(ocr_response.pages):
-                    # 페이지 객체 구조 확인
-                    print(f"페이지 {i+1} 구조: {dir(page)}")
-                    print(f"페이지 {i+1} 덤프: {page.model_dump()}")
-                    
-                    # markdown 필드가 있는지 확인
-                    if hasattr(page, "markdown") and page.markdown:
-                        print(f"페이지 {i+1} 마크다운 샘플: {page.markdown[:100]}...")
-                        pages_text.append(f"--- 페이지 {i+1} ---\n{page.markdown}")
-                    elif hasattr(page, "text") and page.text:
-                        print(f"페이지 {i+1} 텍스트 샘플: {page.text[:100]}...")
-                        pages_text.append(f"--- 페이지 {i+1} ---\n{page.text}")
-                
-                if pages_text:
-                    result = "\n\n".join(pages_text)
-                    return result
-                else:
-                    return "OCR 처리는 완료되었지만 텍스트를 추출할 수 없습니다."
-            else:
-                # 객체 내용 확인
-                print(f"OCR 응답 객체 구조: {dir(ocr_response)}")
-                # 기본 문자열 표현 반환
-                print(f"OCR 응답 문자열: {str(ocr_response)}")
-                return "OCR 결과: 텍스트를 찾을 수 없습니다."
-        except Exception as e:
-            print(f"OCR 결과 처리 중 오류: {str(e)}")
-            return f"OCR 처리는 완료되었지만 결과 파싱 중 오류가 발생했습니다: {str(e)}"
+        # 결과 추출
+        ocr_text = chat_response.choices[0].message.content
+        print(f"OCR 처리 완료: {ocr_text[:100]}...")
+        
+        return ocr_text
         
     except Exception as e:
         print(f"OCR 처리 중 오류 발생: {str(e)}")

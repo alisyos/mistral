@@ -1,8 +1,8 @@
 fastapi==0.115.12
-uvicorn==0.15.0
-python-multipart==0.0.5
-mistralai==0.4.2
+uvicorn==0.24.0
+python-multipart==0.0.9
+mistralai==0.0.9
 pdf2image==1.17.0
-Pillow==11.1.0
+Pillow==10.2.0
 markdown2==2.4.12
 pypdf==3.17.2 
