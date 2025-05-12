@@ -13,7 +13,15 @@ from io import BytesIO
 import pypdf
 from typing import List, Optional
 from ocr_processor import process_document
-from config import MISTRAL_API_KEY
+
+# 환경 변수에서 API 키 가져오기 또는 config 파일에서 가져오기
+try:
+    from config import MISTRAL_API_KEY as CONFIG_API_KEY
+except ImportError:
+    CONFIG_API_KEY = None
+
+# 환경 변수 또는 설정 파일에서 API 키 가져오기
+MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", CONFIG_API_KEY)
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)

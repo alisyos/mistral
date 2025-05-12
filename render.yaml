@@ -6,4 +6,6 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0 
+        value: 3.9.0
+      - key: MISTRAL_API_KEY
+        sync: false # 이것은 사용자가 Render.com 대시보드에서 직접 설정해야 함을 의미합니다 
