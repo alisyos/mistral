@@ -1,0 +1,17 @@
+--- 페이지 1 ---
+# OCR and Document Understanding 
+
+## Document OCR processor
+
+The Document OCR (Optical Character Recognition) processor, powered by our latest OCR model mistral-ocr-latest, enables you to extract text and structured content from PDF documents.
+
+## Key features:
+
+- Extracts text content while maintaining document structure and hierarchy
+- Preserves formatting like headers, paragraphs, lists and tables
+- Returns results in markdown format for easy parsing and rendering
+- Handles complex layouts including multi-column text and mixed content
+- Processes documents at scale with high accuracy
+- Supports multiple document formats including PDF, images, and uploaded documents
+
+The OCR processor returns both the extracted text content and metadata about the document structure, making it easy to work with the recognized content programmatically.
