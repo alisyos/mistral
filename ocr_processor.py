@@ -1,9 +1,9 @@
 import os
 import tempfile
 import base64
+import json
+import requests
 from pdf2image import convert_from_path
-from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
 
 # Mistral API 엔드포인트
 MISTRAL_API_ENDPOINT = "https://api.mistral.ai/v1"
@@ -57,7 +57,7 @@ def process_pdf(pdf_path, mistral_api_key):
 
 def process_file_with_ocr(file_path, mime_type, mistral_api_key):
     """
-    파일을 Mistral API를 사용하여 처리합니다.
+    파일을 Mistral OCR API를 사용하여 처리합니다.
     
     Args:
         file_path (str): 파일 경로
@@ -75,49 +75,79 @@ def process_file_with_ocr(file_path, mime_type, mistral_api_key):
             file_data = file.read()
             file_base64 = base64.b64encode(file_data).decode('utf-8')
         
-        # 이미지 URL 생성
-        file_url = f"data:{mime_type};base64,{file_base64}"
+        # 파일 유형에 따라 다른 처리
+        if mime_type == "application/pdf":
+            # PDF 파일
+            document_type = "document_url"
+            file_url = f"data:application/pdf;base64,{file_base64}"
+        elif mime_type.startswith("image/"):
+            # 이미지 파일
+            document_type = "image_url"
+            file_url = f"data:{mime_type};base64,{file_base64}"
+        else:
+            raise ValueError(f"지원하지 않는 MIME 타입입니다: {mime_type}")
         
-        # Mistral 클라이언트 초기화
-        client = MistralClient(api_key=mistral_api_key)
+        # OCR API 요청 준비
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {mistral_api_key}"
+        }
         
-        # Vision API를 사용하여 OCR 처리
-        print(f"Vision API 호출 중...")
+        # 요청 페이로드 구성
+        payload = {
+            "model": "mistral-ocr-latest",
+            "document": {
+                "type": document_type
+            }
+        }
         
-        # 프롬프트 생성
-        prompt = f"""이미지에 포함된 모든 텍스트를 추출해주세요. 
-        가능한 한 원본 형식(단락, 들여쓰기, 번호 매기기 등)을 유지하고, 
-        테이블 구조도 보존해주세요."""
+        # 파일 유형에 따라 URL 필드 설정
+        if document_type == "document_url":
+            payload["document"]["document_url"] = file_url
+        else:
+            payload["document"]["image_url"] = file_url
         
-        messages = [
-            ChatMessage(
-                role="user", 
-                content=[
-                    {
-                        "type": "text", 
-                        "text": prompt
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": file_url
-                        }
-                    }
-                ]
-            )
-        ]
+        # OCR API 호출
+        print(f"OCR API 호출 중...")
         
-        # API 호출
-        chat_response = client.chat(
-            model="mistral-large-latest",
-            messages=messages
+        response = requests.post(
+            f"{MISTRAL_API_ENDPOINT}/ocr",
+            headers=headers,
+            json=payload
         )
         
-        # 결과 추출
-        ocr_text = chat_response.choices[0].message.content
-        print(f"OCR 처리 완료: {ocr_text[:100]}...")
+        # 응답 확인
+        if response.status_code != 200:
+            print(f"OCR API 오류: {response.status_code}, {response.text}")
+            return f"OCR API 응답 오류: {response.status_code}, {response.text}"
         
-        return ocr_text
+        # 응답 처리
+        try:
+            ocr_result = response.json()
+            print(f"OCR 응답: {ocr_result}")
+            
+            # 텍스트 추출
+            if "text" in ocr_result and ocr_result["text"]:
+                # 단일 텍스트 필드
+                return ocr_result["text"]
+            elif "pages" in ocr_result and ocr_result["pages"]:
+                # 여러 페이지 처리
+                pages_text = []
+                for i, page in enumerate(ocr_result["pages"]):
+                    if "markdown" in page and page["markdown"]:
+                        pages_text.append(f"--- 페이지 {i+1} ---\n{page['markdown']}")
+                    elif "text" in page and page["text"]:
+                        pages_text.append(f"--- 페이지 {i+1} ---\n{page['text']}")
+                
+                if pages_text:
+                    return "\n\n".join(pages_text)
+                
+            return "OCR 처리는 완료되었지만 텍스트를 추출할 수 없습니다."
+        
+        except Exception as e:
+            print(f"OCR 결과 처리 중 오류: {str(e)}")
+            return f"OCR 처리는 완료되었지만 결과 파싱 중 오류가 발생했습니다: {str(e)}"
         
     except Exception as e:
         print(f"OCR 처리 중 오류 발생: {str(e)}")
