@@ -5,40 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mistral OCR 서비스</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
             color: #333;
+        }
+        
+        .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
+        
         h1 {
             color: #2c3e50;
-            margin-bottom: 30px;
             text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
         }
-        .container {
-            background-color: #f9f9f9;
+        
+        .card {
+            background-color: white;
             border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
+        
         .form-group {
             margin-bottom: 20px;
         }
+        
         label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
+            margin-bottom: 5px;
+            font-weight: 500;
         }
+        
         input[type="file"], input[type="text"] {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            font-family: inherit;
         }
+        
+        input[type="text"] {
+            font-size: 14px;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            font-family: inherit;
+        }
+        
         button {
             background-color: #3498db;
             color: white;
@@ -46,243 +76,248 @@
             padding: 12px 20px;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: 500;
             font-size: 16px;
             display: block;
             width: 100%;
+            font-family: inherit;
+            transition: background-color 0.3s;
         }
+        
         button:hover {
             background-color: #2980b9;
         }
-        #result {
+        
+        .result {
             margin-top: 30px;
-            white-space: pre-wrap;
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 4px;
-            background-color: white;
-            min-height: 200px;
-        }
-        .hidden {
             display: none;
         }
-        .spinner {
+        
+        #resultText {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            flex: 1;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .loading {
+            display: none;
             text-align: center;
             margin: 20px 0;
         }
-        .controls {
-            margin-top: 15px;
-            text-align: right;
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
         }
-        .controls button {
-            width: auto;
-            display: inline-block;
-            background-color: #95a5a6;
-            margin-left: 10px;
-            padding: 8px 15px;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        /* 로딩 애니메이션 */
-        .lds-ring {
-          display: inline-block;
-          position: relative;
-          width: 80px;
-          height: 80px;
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 14px;
         }
-        .lds-ring div {
-          box-sizing: border-box;
-          display: block;
-          position: absolute;
-          width: 64px;
-          height: 64px;
-          margin: 8px;
-          border: 8px solid #3498db;
-          border-radius: 50%;
-          animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-          border-color: #3498db transparent transparent transparent;
-        }
-        .lds-ring div:nth-child(1) {
-          animation-delay: -0.45s;
-        }
-        .lds-ring div:nth-child(2) {
-          animation-delay: -0.3s;
-        }
-        .lds-ring div:nth-child(3) {
-          animation-delay: -0.15s;
-        }
-        @keyframes lds-ring {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-        /* 라디오 버튼 스타일 */
-        .radio-group {
-            display: flex;
-            gap: 20px;
+        
+        .error {
+            color: #e74c3c;
             margin-top: 5px;
+            font-size: 14px;
         }
         
-        .radio-label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-weight: normal;
-        }
-        
-        .radio-label input {
-            margin-right: 5px;
+        .note {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
         }
     </style>
 </head>
 <body>
-    <h1>Mistral OCR 서비스</h1>
-    
     <div class="container">
-        <form id="ocrForm">
-            <div class="form-group">
-                <label for="file">파일 선택 (이미지 또는 PDF)</label>
-                <input type="file" id="file" name="file" accept=".jpg,.jpeg,.png,.pdf,.bmp,.tiff,.tif" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="apiKey">Mistral API 키 (선택사항)</label>
-                <input type="text" id="apiKey" name="mistral_api_key" placeholder="config.py에 API 키가 설정되어 있다면 생략 가능">
-            </div>
-            
-            <div class="form-group">
-                <label>결과 형식</label>
-                <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" name="output_format" value="text" checked> 텍스트
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="output_format" value="html"> HTML
-                    </label>
-                </div>
-            </div>
-            
-            <button type="submit" id="submitBtn">OCR 실행</button>
-        </form>
+        <h1>Mistral OCR 서비스</h1>
         
-        <div id="spinner" class="spinner hidden">
-            <p>처리 중입니다...</p>
-            <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        <div class="card">
+            <form id="ocrForm">
+                <div class="form-group">
+                    <label for="fileInput">이미지 또는 PDF 파일 선택</label>
+                    <input type="file" id="fileInput" name="file" accept=".jpg,.jpeg,.png,.bmp,.tiff,.tif,.pdf" required>
+                    <div class="note">지원 형식: JPG, PNG, BMP, TIFF, PDF</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apiKey">Mistral API 키</label>
+                    <input type="text" id="apiKey" name="mistral_api_key" placeholder="Mistral API 키를 입력하세요">
+                    <div class="note">API 키가 설정되어 있다면 입력하지 않아도 됩니다.</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="outputFormat">출력 형식</label>
+                    <select id="outputFormat" name="output_format">
+                        <option value="text">텍스트</option>
+                        <option value="html">HTML</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="processBtn">OCR 처리 시작</button>
+            </form>
+            
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <div>OCR 처리 중... 파일 크기에 따라 수 분이 소요될 수 있습니다.</div>
+            </div>
         </div>
         
-        <div id="resultContainer" class="hidden">
-            <h3>OCR 결과</h3>
-            <div id="result"></div>
-            <div class="controls">
-                <button id="copyBtn">결과 복사</button>
+        <div class="result card" id="resultContainer">
+            <h2>OCR 결과</h2>
+            <pre id="resultText"></pre>
+            
+            <div class="actions">
+                <button id="copyBtn" class="btn-secondary">결과 복사</button>
+                <button id="downloadBtn" class="btn-secondary">텍스트 파일로 저장</button>
             </div>
+        </div>
+        
+        <div class="footer">
+            &copy; 2025 Mistral OCR 서비스 | Powered by Mistral AI
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('ocrForm');
+            const loadingIndicator = document.getElementById('loadingIndicator');
             const resultContainer = document.getElementById('resultContainer');
-            const result = document.getElementById('result');
-            const spinner = document.getElementById('spinner');
+            const resultText = document.getElementById('resultText');
             const copyBtn = document.getElementById('copyBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const processBtn = document.getElementById('processBtn');
             
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                // 폼 데이터 준비
-                const formData = new FormData();
-                const fileInput = document.getElementById('file');
-                const apiKey = document.getElementById('apiKey').value;
-                const outputFormat = document.querySelector('input[name="output_format"]:checked').value;
+                // 폼 데이터 생성
+                const formData = new FormData(form);
                 
-                if(fileInput.files.length === 0) {
-                    alert('파일을 선택해주세요.');
-                    return;
+                // API 키가 비어있으면 제거 (서버 측 기본값 사용)
+                if (!formData.get('mistral_api_key')) {
+                    formData.delete('mistral_api_key');
                 }
-                
-                formData.append('file', fileInput.files[0]);
-                if(apiKey) {
-                    formData.append('mistral_api_key', apiKey);
-                }
-                formData.append('output_format', outputFormat);
                 
                 // UI 업데이트
-                spinner.classList.remove('hidden');
-                resultContainer.classList.add('hidden');
+                processBtn.disabled = true;
+                loadingIndicator.style.display = 'block';
+                resultContainer.style.display = 'none';
                 
                 try {
-                    // API 호출
-                    if (outputFormat === "html") {
-                        // HTML 다운로드를 위한 폼 제출
-                        const form = document.createElement('form');
-                        form.method = 'post';
-                        form.action = '/ocr';
-                        form.enctype = 'multipart/form-data';
-                        form.target = '_blank';
+                    // HTML 형식이 선택된 경우
+                    if (formData.get('output_format') === 'html') {
+                        // 폼 제출을 통한 리디렉션
+                        const tempForm = document.createElement('form');
+                        tempForm.method = 'post';
+                        tempForm.action = '/ocr';
+                        tempForm.enctype = 'multipart/form-data';
                         
-                        // 파일 필드 복제
-                        const fileClone = fileInput.cloneNode(true);
-                        fileClone.style.display = 'none';
-                        form.appendChild(fileClone);
+                        // 파일 필드 추가
+                        const fileField = document.createElement('input');
+                        fileField.type = 'file';
+                        fileField.name = 'file';
+                        fileField.files = document.getElementById('fileInput').files;
+                        tempForm.appendChild(fileField);
                         
                         // API 키 필드 추가
-                        if (apiKey) {
-                            const apiKeyInput = document.createElement('input');
-                            apiKeyInput.type = 'hidden';
-                            apiKeyInput.name = 'mistral_api_key';
-                            apiKeyInput.value = apiKey;
-                            form.appendChild(apiKeyInput);
+                        if (formData.get('mistral_api_key')) {
+                            const apiKeyField = document.createElement('input');
+                            apiKeyField.type = 'hidden';
+                            apiKeyField.name = 'mistral_api_key';
+                            apiKeyField.value = formData.get('mistral_api_key');
+                            tempForm.appendChild(apiKeyField);
                         }
                         
                         // 출력 형식 필드 추가
-                        const outputFormatInput = document.createElement('input');
-                        outputFormatInput.type = 'hidden';
-                        outputFormatInput.name = 'output_format';
-                        outputFormatInput.value = 'html';
-                        form.appendChild(outputFormatInput);
+                        const outputFormatField = document.createElement('input');
+                        outputFormatField.type = 'hidden';
+                        outputFormatField.name = 'output_format';
+                        outputFormatField.value = 'html';
+                        tempForm.appendChild(outputFormatField);
                         
-                        // 폼을 문서에 추가하고 제출
-                        document.body.appendChild(form);
-                        form.submit();
-                        document.body.removeChild(form);
-                        
-                        // UI 업데이트
-                        spinner.classList.add('hidden');
-                    } else {
-                        // 일반 API 호출 (텍스트 결과)
-                        const response = await fetch('/ocr', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        if(!response.ok) {
-                            throw new Error('OCR 처리 중 오류가 발생했습니다.');
-                        }
-                        
-                        const data = await response.json();
-                        
-                        // 디버깅을 위한 콘솔 로깅
-                        console.log('OCR API 응답:', data);
-                        
-                        // 결과 표시
-                        result.textContent = data.result;
-                        resultContainer.classList.remove('hidden');
+                        // 폼을 DOM에 추가하고 제출
+                        document.body.appendChild(tempForm);
+                        tempForm.submit();
+                        return;
                     }
-                } catch(error) {
-                    alert(error.message || '처리 중 오류가 발생했습니다.');
-                    console.error('Error:', error);
+                    
+                    // OCR API 호출
+                    const response = await fetch('/ocr', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // 결과 표시
+                    resultText.textContent = data.result;
+                    resultContainer.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Error during OCR processing:', error);
+                    resultText.textContent = `오류가 발생했습니다: ${error.message}`;
+                    resultContainer.style.display = 'block';
                 } finally {
-                    spinner.classList.add('hidden');
+                    // UI 원상복구
+                    processBtn.disabled = false;
+                    loadingIndicator.style.display = 'none';
                 }
             });
             
-            // 결과 복사 기능
+            // 복사 버튼
             copyBtn.addEventListener('click', function() {
-                const textToCopy = result.textContent;
-                navigator.clipboard.writeText(textToCopy)
+                navigator.clipboard.writeText(resultText.textContent)
                     .then(() => alert('결과가 클립보드에 복사되었습니다.'))
-                    .catch(err => console.error('복사 실패:', err));
+                    .catch(err => console.error('클립보드 복사 오류:', err));
+            });
+            
+            // 다운로드 버튼
+            downloadBtn.addEventListener('click', function() {
+                const blob = new Blob([resultText.textContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `OCR_Result_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
             });
         });
     </script>
